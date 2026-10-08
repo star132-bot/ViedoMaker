@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import mimetypes
 import os
+import time
 from pathlib import Path
 
 import requests
@@ -29,6 +30,19 @@ SIZES = {  # 画幅 → 生成尺寸
 def _data_uri(path: Path) -> str:
     mime = mimetypes.guess_type(path.name)[0] or "image/png"
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
+
+
+def _retry(fn, attempts: int = 4, base_delay: float = 2.0):
+    """中转服务偶尔断开连接或返回 5xx：按 2s、4s、8s 退避重试。"""
+    for i in range(attempts):
+        try:
+            r = fn()
+            if r.status_code < 500 or i == attempts - 1:
+                return r
+        except (requests.ConnectionError, requests.Timeout):
+            if i == attempts - 1:
+                raise
+        time.sleep(base_delay * 2 ** i)
 
 
 class OpenAIImageProvider:
@@ -67,7 +81,7 @@ class OpenAIImageProvider:
             "tool_choice": {"type": "image_generation"},
             "store": False,
         }
-        r = self.session.post(f"{self.base_url}/responses", json=body, timeout=600)
+        r = _retry(lambda: self.session.post(f"{self.base_url}/responses", json=body, timeout=600))
         if r.status_code >= 400:
             raise RuntimeError(f"图像生成失败 {r.status_code}: {r.text[:500]}")
         for item in r.json().get("output", []):
@@ -79,20 +93,24 @@ class OpenAIImageProvider:
         if refs:
             files = [("image[]", (r.name, r.read_bytes(), mimetypes.guess_type(r.name)[0] or "image/png"))
                      for r in refs]
-            r = self.session.post(f"{self.base_url}/images/edits", timeout=600, files=files,
-                                  data={"model": self.image_model, "prompt": prompt, "size": size,
-                                        "quality": "high", "response_format": "b64_json"})
+            r = _retry(lambda: self.session.post(
+                f"{self.base_url}/images/edits", timeout=600, files=files,
+                data={"model": self.image_model, "prompt": prompt, "size": size,
+                      "quality": "high", "response_format": "b64_json"}))
         else:
-            r = self.session.post(f"{self.base_url}/images/generations", timeout=600,
-                                  json={"model": self.image_model, "prompt": prompt, "size": size, "n": 1,
-                                        "response_format": "b64_json"})
+            r = _retry(lambda: self.session.post(
+                f"{self.base_url}/images/generations", timeout=600,
+                json={"model": self.image_model, "prompt": prompt, "size": size, "n": 1,
+                      "response_format": "b64_json"}))
         if r.status_code >= 400:
             raise RuntimeError(f"图像生成失败 {r.status_code}: {r.text[:500]}")
         item = r.json()["data"][0]
         if item.get("b64_json"):
             return item["b64_json"]
         try:
-            return base64.b64encode(requests.get(item["url"], timeout=300).content).decode()
+            r = _retry(lambda: requests.get(item["url"], timeout=300))
+            r.raise_for_status()
+            return base64.b64encode(r.content).decode()
         except requests.RequestException as e:
             host = item["url"].split("/")[2]
             raise RuntimeError(f"图片已生成，但中转服务返回的是图床地址 {host}，当前网络无法访问。"
