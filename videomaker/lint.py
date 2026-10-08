@@ -57,7 +57,7 @@ def lint(project: Project, max_seconds: int = 15, requires_start_image: bool = F
         text = video_prompt(project, seg) + seg.shot.keyframe_prompt
         hits = [x for x in LETTERBOX_WORDS if x.lower() in text.lower() and f"无{x}" not in text]
         if hits:
-            w.append(f"段落 {seg.key} 提示词含 {hits}：模型会把上下黑条画进画面，改写成"电影感构图"即可")
+            w.append(f"段落 {seg.key} 提示词含 {hits}：模型会把上下黑条画进画面，改写成「电影感构图」即可")
         n = len(video_prompt(project, seg))
         if n > MAX_PROMPT_CHARS:
             w.append(f"段落 {seg.key} 提示词 {n} 字，过长会被忽略重点，建议精简")
