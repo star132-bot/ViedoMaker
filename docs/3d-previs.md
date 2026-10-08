@@ -9,7 +9,14 @@
 - 文生图反复抽卡都得不到想要的构图
 
 ## 流程
-1. 在 Blender 中用简单几何体或免费模型（Mixamo 人物、Poly Haven 场景）搭场景，为每个镜头建一个摄像机，命名为镜头 id（如 `s03`）。
+0. 生成角色或道具的 3D 模型（Tripo3D）。推荐从角色设定图生成，外观与视频一致：
+   ```bash
+   vm image "小橘的全身正面设定图，纯白背景，T 字站姿" --out projects/<名字>/assets/cat_ref.png
+   vm model3d --image projects/<名字>/assets/cat_ref.png --out projects/<名字>/assets/3d/cat.glb
+   vm model3d --prompt "深夜的街角便利店门面，低多边形" --out projects/<名字>/assets/3d/store.glb
+   ```
+   在 Blender 中用 File → Import → glTF 2.0 导入 `.glb`。
+1. 在 Blender 中用上面生成的模型、简单几何体或免费素材（Mixamo 人物、Poly Haven 场景）搭场景，为每个镜头建一个摄像机，命名为镜头 id（如 `s03`）。
 2. 渲染首帧：
    ```bash
    blender -b scene.blend -P tools/blender/render_layout.py -- \

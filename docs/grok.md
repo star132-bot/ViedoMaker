@@ -3,6 +3,13 @@
 > 接口字段根据公开资料整理，**首次接入请对照 https://docs.x.ai 核对**。字段拼装集中在
 > `videomaker/providers/grok.py` 的 `_video_body` / `_image_body`，有出入时只需改这两处。
 
+## 配置
+```bash
+XAI_API_KEY=...
+GROK_MODELS_BASE_URL=https://api.x.ai/v1   # 使用中转服务时改成中转地址
+VM_VIDEO_MODEL=grok-imagine-video-1.5      # 默认
+```
+
 ## 接口
 - 视频：`POST https://api.x.ai/v1/videos/generations` 返回 `request_id`，再轮询 `GET /v1/videos/{request_id}`。
   结果 URL **有时效**，工具会在拿到后立即下载。
@@ -12,8 +19,8 @@
 ## 模型（通过 `VM_VIDEO_MODEL` 切换）
 | 模型 | 能力 | 备注 |
 | --- | --- | --- |
-| `grok-imagine-video` | 文生视频 + 图生视频 | 默认 |
-| `grok-imagine-video-1.5` | **仅图生视频**，带同步音频 | 必须提供首帧，不能用 `start_frame: none` |
+| `grok-imagine-video-1.5` | **仅图生视频**，带同步音频 | 默认；必须提供首帧，不能用 `start_frame: none` |
+| `grok-imagine-video` | 文生视频 + 图生视频 | |
 
 限制：单段 1–15 秒，480p / 720p。价格以官方页面为准。
 

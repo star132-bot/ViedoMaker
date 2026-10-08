@@ -13,8 +13,12 @@ MAX_PROMPT_CHARS = 1800
 CHARS_PER_SECOND = 5  # 中文台词语速上限（字/秒）
 
 
-def lint(project: Project, max_seconds: int = 15) -> list[str]:
+def lint(project: Project, max_seconds: int = 15, requires_start_image: bool = False) -> list[str]:
     w: list[str] = []
+    if requires_start_image:
+        for seg in plan_segments(project, max_seconds):
+            if seg.start_frame == "none":
+                w.append(f"镜头 {seg.shot.id} 是纯文生视频（none），当前视频模型只支持图生视频，会失败")
     s = project.style
     if not s.look:
         w.append("style.look 为空：没有统一画风，镜头之间容易风格漂移")

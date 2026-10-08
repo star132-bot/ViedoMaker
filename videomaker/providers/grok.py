@@ -6,8 +6,9 @@
 - 视频：POST {base}/videos/generations → {"request_id": ...}
         GET  {base}/videos/{request_id}  → 轮询直到完成，取视频 URL 并立即下载（URL 有时效）
 - 图像：POST {base}/images/generations
-- 模型：grok-imagine-video（文生视频 + 图生视频）
-        grok-imagine-video-1.5（仅图生视频，带同步音频）
+- 模型：grok-imagine-video-1.5（默认；仅图生视频，带同步音频）
+        grok-imagine-video（文生视频 + 图生视频）
+- 地址：GROK_MODELS_BASE_URL 或 XAI_BASE_URL（可指向中转服务），默认 https://api.x.ai/v1
 - 单段 1–15 秒，480p / 720p
 """
 
@@ -67,8 +68,9 @@ class GrokProvider(VideoProvider):
         self.api_key = api_key or os.environ.get("XAI_API_KEY")
         if not self.api_key:
             raise RuntimeError("缺少 XAI_API_KEY 环境变量（见 .env.example）")
-        self.base_url = (base_url or os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")).rstrip("/")
-        self.model = video_model or os.environ.get("VM_VIDEO_MODEL", "grok-imagine-video")
+        self.base_url = (base_url or os.environ.get("GROK_MODELS_BASE_URL")
+                         or os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")).rstrip("/")
+        self.model = video_model or os.environ.get("VM_VIDEO_MODEL", "grok-imagine-video-1.5")
         self.image_model = image_model or os.environ.get("VM_IMAGE_MODEL", "grok-imagine-image")
         self.poll_interval = poll_interval
         self.timeout = timeout
@@ -98,6 +100,10 @@ class GrokProvider(VideoProvider):
         }
 
     # ---- 接口实现 ----
+    @property
+    def requires_start_image(self) -> bool:
+        return "1.5" in self.model
+
     def _post(self, path: str, body: dict) -> dict:
         r = self.session.post(f"{self.base_url}{path}", json=body, timeout=120)
         if r.status_code >= 400:
@@ -118,6 +124,8 @@ class GrokProvider(VideoProvider):
     def generate_video(self, prompt, out_path, duration, aspect_ratio, resolution, start_image=None):
         if not 1 <= duration <= self.max_clip_seconds:
             raise ValueError(f"duration 必须在 1–{self.max_clip_seconds} 秒之间，收到 {duration}")
+        if start_image is None and self.requires_start_image:
+            raise ValueError(f"{self.model} 只支持图生视频，请为该镜头设置 start_frame: keyframe/file/chain")
         job = self._post("/videos/generations", self._video_body(prompt, duration, aspect_ratio, resolution, start_image))
         url = _find_url(job)  # 万一是同步返回
         if not url:

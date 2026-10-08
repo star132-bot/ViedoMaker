@@ -17,7 +17,8 @@
 
 ```bash
 pip install -e '.[dev]'
-export XAI_API_KEY=...                       # 见 .env.example
+cp .env.example .env                         # 填入密钥（.env 不会提交）；vm 自动读取
+vm ping                                      # 0. 检查三个服务的连通性和密钥
 
 vm check   projects/<名字>                   # 1. 校验 + 质量建议，先把 ⚠ 处理掉
 vm prompts projects/<名字>                   # 2. 审阅每段最终提示词
@@ -26,6 +27,18 @@ vm render  projects/<名字>                   # 4. 真实生成（断点续跑�
 vm render  projects/<名字> --retake s03      # 5. 不满意就重拍某个镜头/段落
 vm assemble projects/<名字>                  # 6. 拼接成片 + 字幕 + 音乐 + 发布元数据
 ```
+
+## 用到的模型
+
+| 用途 | 服务 | 命令 / 配置 |
+| --- | --- | --- |
+| 视频 | Grok Imagine Video 1.5（仅图生视频） | `vm render`，`XAI_API_KEY` + `GROK_MODELS_BASE_URL` |
+| 图像（关键帧、设定图） | OpenAI 兼容接口，Responses + image_generation | `vm image`，`OPENAI_API_KEY` + `OPENAI_BASE_URL` |
+| 3D（预演用模型） | Tripo3D | `vm model3d`，`TRIPO_API_KEY` |
+
+因为 Grok 1.5 只做图生视频，**每段都必须有首帧**：第一个镜头和新机位用 `keyframe`（由图像模型生成），或者用 `file`。
+
+**密钥只放在 `.env` 或环境变量里，绝不写进 project.yaml、代码或提交记录。**
 
 ## 规则
 
