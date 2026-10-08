@@ -96,4 +96,4 @@ class OpenAIImageProvider:
         except requests.RequestException as e:
             host = item["url"].split("/")[2]
             raise RuntimeError(f"图片已生成，但中转服务返回的是图床地址 {host}，当前网络无法访问。"
-                               f"请放行该域名，或改用 --image-provider grok") from e
+                               f"请在云环境网络设置中放行该域名") from e

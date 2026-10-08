@@ -44,16 +44,16 @@ VM_VIDEO_MODEL=grok-imagine-video-1.5      # 默认
 
 ## 网络（云环境）
 需要放行：
-- `194834.xyz`：Grok 视频和 Grok 图像
+- `194834.xyz`：Grok 视频
 - `www.bb-api.com` 和 `img2.lsyzzzz.com`：gpt-image-2.5。中转服务经常只返回图床地址，不返回 base64，所以图床域名也要放行
 - `api.tripo3d.ai` 和 `tripo-data.rg1.data.tripo3d.com`：Tripo 的 API 和模型下载
 
-## 图像模型
-- 默认使用 gpt-image-2.5（`--image-provider openai`）。带参考图时走 `/images/edits`，实测中转服务会把它映射到 gpt-image-2。
-- 备用：`--image-provider grok`，使用 `grok-imagine-image-2.0`，稳定返回 base64，720×1280，单张约 0.04 美元。不支持参考图。
+## 分工
+- **Grok 只用于生成视频。**
+- **图像（关键帧、设定图）只用 gpt-image-2.5**（`vm image`、`--image-provider openai`）。带参考图时走 `/images/edits`，实测中转服务会把它映射到 gpt-image-2。
 
 ## 端到端实测（2026-10-08）
-2 个镜头、3 段、21 秒、480p 竖屏：关键帧 → 图生视频 → 尾帧接力 → 拼接 → 字幕，全部跑通。
+2 个镜头、3 段、21 秒、480p 竖屏（这次因为图床域名未放行，关键帧临时用 Grok 图像模型生成）：关键帧 → 图生视频 → 尾帧接力 → 拼接 → 字幕，全部跑通。
 - 尾帧接力的衔接处（同一镜头的两段之间）几乎看不出接缝。
 - 不同镜头的关键帧如果不带参考图，猫的特征（白胸口等）会不一致。**角色必须配设定图**。
 - 场景里写"便利店"时，模型会画出类似真实品牌的招牌。在 `avoid` 里加上"品牌标志、可读的招牌文字"。

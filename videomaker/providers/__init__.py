@@ -1,7 +1,7 @@
 """provider 注册表。视频模型和图像模型分开选择，再组合成一个 VideoProvider 给流程使用。
 
-视频：grok | mock
-图像：openai | grok | mock
+视频：grok | mock（Grok 只用于视频）
+图像：openai（gpt-image-2.5）| mock
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 from .base import VideoProvider
 
 VIDEO = ("grok", "mock")
-IMAGE = ("openai", "grok", "mock")
+IMAGE = ("openai", "mock")
 
 
 def _video(name: str):
@@ -28,7 +28,9 @@ def _image(name: str, video):
         return OpenAIImageProvider()
     if name == video.name:
         return video
-    return _video(name)
+    if name == "mock":
+        return _video("mock")
+    raise ValueError(f"未知的图像 provider: {name}（可选：{', '.join(IMAGE)}）")
 
 
 class Combined(VideoProvider):
@@ -38,7 +40,7 @@ class Combined(VideoProvider):
         self.video, self.image = video, image
         self.name = video.name if video is image else f"{video.name}+{image.name}"
         self.model = video.model
-        self.image_model = image.model if image is not video else getattr(video, "image_model", video.model)
+        self.image_model = image.model
         self.max_clip_seconds = video.max_clip_seconds
 
     @property
@@ -57,7 +59,9 @@ def get_image_provider(name: str):
     if name == "openai":
         from .openai_image import OpenAIImageProvider
         return OpenAIImageProvider()
-    return _video(name)
+    if name == "mock":
+        return _video("mock")
+    raise ValueError(f"未知的图像 provider: {name}（可选：{', '.join(IMAGE)}）")
 
 
 def default_image_provider(video: str) -> str:

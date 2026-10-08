@@ -1,11 +1,10 @@
 """xAI Grok Imagine 接入。
 
 注意：以下字段名根据公开资料整理，接入前请以 https://docs.x.ai 为准核对。
-所有请求体的拼装都集中在 _video_body / _image_body 两个方法里，改起来只需动这里。
+请求体的拼装集中在 _video_body 方法里，改起来只需动这里。Grok 只用于视频，不用来生图。
 
 - 视频：POST {base}/videos/generations → {"request_id": ...}
         GET  {base}/videos/{request_id}  → 轮询直到完成，取视频 URL 并立即下载（URL 有时效）
-- 图像：POST {base}/images/generations
 - 模型：grok-imagine-video-1.5（默认；仅图生视频，带同步音频）
         grok-imagine-video（文生视频 + 图生视频）
 - 地址：GROK_MODELS_BASE_URL 或 XAI_BASE_URL（可指向中转服务），默认 https://api.x.ai/v1
@@ -62,7 +61,6 @@ class GrokProvider(VideoProvider):
         api_key: str | None = None,
         base_url: str | None = None,
         video_model: str | None = None,
-        image_model: str | None = None,
         poll_interval: float = 5.0,
         timeout: float = 900.0,
     ):
@@ -72,7 +70,6 @@ class GrokProvider(VideoProvider):
         self.base_url = (base_url or os.environ.get("GROK_MODELS_BASE_URL")
                          or os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")).rstrip("/")
         self.model = video_model or os.environ.get("VM_VIDEO_MODEL", "grok-imagine-video-1.5")
-        self.image_model = image_model or os.environ.get("VM_GROK_IMAGE_MODEL", "grok-imagine-image-2.0")
         self.poll_interval = poll_interval
         self.timeout = timeout
         self.session = requests.Session()
@@ -91,15 +88,6 @@ class GrokProvider(VideoProvider):
             body["image"] = {"url": _data_uri(start_image)}
         return body
 
-    def _image_body(self, prompt, aspect_ratio):
-        return {
-            "model": self.image_model,
-            "prompt": prompt,
-            "n": 1,
-            "aspect_ratio": aspect_ratio,
-            "response_format": "b64_json",  # 实测 720x1280 JPEG
-        }
-
     # ---- 接口实现 ----
     @property
     def requires_start_image(self) -> bool:
@@ -112,20 +100,7 @@ class GrokProvider(VideoProvider):
         return r.json()
 
     def generate_image(self, prompt, out_path, aspect_ratio, reference_images=None):
-        # reference_images 暂未使用：Grok 图像接口是否支持参考图请查文档后在此接入
-        data = self._post("/images/generations", self._image_body(prompt, aspect_ratio))
-        item = data["data"][0]
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        raw = out_path.with_suffix(".download")
-        if item.get("b64_json"):
-            raw.write_bytes(base64.b64decode(item["b64_json"]))
-        else:
-            self._download(item["url"], raw)
-        # 返回的可能是 JPEG，统一转成输出文件扩展名对应的格式
-        from .. import media
-        media.run_ffmpeg(["-i", str(raw), "-frames:v", "1", str(out_path)])
-        raw.unlink()
-        return out_path
+        raise NotImplementedError("Grok 只用于生成视频；图像请用 gpt-image-2.5（--image-provider openai）")
 
     def generate_video(self, prompt, out_path, duration, aspect_ratio, resolution, start_image=None):
         if not 1 <= duration <= self.max_clip_seconds:
