@@ -1,9 +1,11 @@
 """OpenAI 兼容的图像生成（关键帧、角色设定图、场景母版）。
 
 两种调用方式（VM_IMAGE_API 切换）：
-- responses（默认，与 Codex 相同）：POST {base}/responses，用 image_generation 工具，
-  由 VM_IMAGE_CHAT_MODEL（默认 gpt-5.5）驱动，参考图以 input_image 传入。
-- images：POST {base}/images/generations（有参考图时走 /images/edits），模型为 VM_IMAGE_MODEL。
+- images（默认）：POST {base}/images/generations（有参考图时走 /images/edits），
+  模型为 VM_IMAGE_MODEL（默认 gpt-image-2.5）。请求 b64_json，图片随响应返回，
+  不依赖中转服务的图床域名。
+- responses（Codex 方式）：POST {base}/responses，用 image_generation 工具，
+  由 VM_IMAGE_CHAT_MODEL 驱动。需要中转服务支持对应的对话模型。
 
 环境变量：OPENAI_API_KEY、OPENAI_BASE_URL（默认 https://api.openai.com/v1）
 """
@@ -37,7 +39,7 @@ class OpenAIImageProvider:
         if not self.api_key:
             raise RuntimeError("缺少 OPENAI_API_KEY 环境变量（见 .env.example）")
         self.base_url = (base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
-        self.api = os.environ.get("VM_IMAGE_API", "responses")
+        self.api = os.environ.get("VM_IMAGE_API", "images")
         self.chat_model = os.environ.get("VM_IMAGE_CHAT_MODEL", "gpt-5.5")
         self.image_model = os.environ.get("VM_IMAGE_MODEL", "gpt-image-2.5")
         self.model = self.chat_model if self.api == "responses" else self.image_model
@@ -78,13 +80,20 @@ class OpenAIImageProvider:
             files = [("image[]", (r.name, r.read_bytes(), mimetypes.guess_type(r.name)[0] or "image/png"))
                      for r in refs]
             r = self.session.post(f"{self.base_url}/images/edits", timeout=600, files=files,
-                                  data={"model": self.image_model, "prompt": prompt, "size": size})
+                                  data={"model": self.image_model, "prompt": prompt, "size": size,
+                                        "quality": "high", "response_format": "b64_json"})
         else:
             r = self.session.post(f"{self.base_url}/images/generations", timeout=600,
-                                  json={"model": self.image_model, "prompt": prompt, "size": size, "n": 1})
+                                  json={"model": self.image_model, "prompt": prompt, "size": size, "n": 1,
+                                        "response_format": "b64_json"})
         if r.status_code >= 400:
             raise RuntimeError(f"图像生成失败 {r.status_code}: {r.text[:500]}")
         item = r.json()["data"][0]
         if item.get("b64_json"):
             return item["b64_json"]
-        return base64.b64encode(requests.get(item["url"], timeout=300).content).decode()
+        try:
+            return base64.b64encode(requests.get(item["url"], timeout=300).content).decode()
+        except requests.RequestException as e:
+            host = item["url"].split("/")[2]
+            raise RuntimeError(f"图片已生成，但中转服务返回的是图床地址 {host}，当前网络无法访问。"
+                               f"请放行该域名，或改用 --image-provider grok") from e

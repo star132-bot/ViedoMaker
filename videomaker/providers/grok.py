@@ -19,6 +19,7 @@ import mimetypes
 import os
 import time
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -71,7 +72,7 @@ class GrokProvider(VideoProvider):
         self.base_url = (base_url or os.environ.get("GROK_MODELS_BASE_URL")
                          or os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")).rstrip("/")
         self.model = video_model or os.environ.get("VM_VIDEO_MODEL", "grok-imagine-video-1.5")
-        self.image_model = image_model or os.environ.get("VM_IMAGE_MODEL", "grok-imagine-image")
+        self.image_model = image_model or os.environ.get("VM_GROK_IMAGE_MODEL", "grok-imagine-image-2.0")
         self.poll_interval = poll_interval
         self.timeout = timeout
         self.session = requests.Session()
@@ -96,7 +97,7 @@ class GrokProvider(VideoProvider):
             "prompt": prompt,
             "n": 1,
             "aspect_ratio": aspect_ratio,
-            "response_format": "b64_json",
+            "response_format": "b64_json",  # 实测 720x1280 JPEG
         }
 
     # ---- 接口实现 ----
@@ -115,10 +116,15 @@ class GrokProvider(VideoProvider):
         data = self._post("/images/generations", self._image_body(prompt, aspect_ratio))
         item = data["data"][0]
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        raw = out_path.with_suffix(".download")
         if item.get("b64_json"):
-            out_path.write_bytes(base64.b64decode(item["b64_json"]))
+            raw.write_bytes(base64.b64decode(item["b64_json"]))
         else:
-            self._download(item["url"], out_path)
+            self._download(item["url"], raw)
+        # 返回的可能是 JPEG，统一转成输出文件扩展名对应的格式
+        from .. import media
+        media.run_ffmpeg(["-i", str(raw), "-frames:v", "1", str(out_path)])
+        raw.unlink()
         return out_path
 
     def generate_video(self, prompt, out_path, duration, aspect_ratio, resolution, start_image=None):
@@ -151,8 +157,12 @@ class GrokProvider(VideoProvider):
         raise TimeoutError(f"等待视频 {request_id} 超时（{self.timeout}s）")
 
     def _download(self, url: str, out_path: Path) -> Path:
+        # 中转服务可能返回相对地址（如 /v1/videos/{id}/content），且需要鉴权
+        url = urljoin(self.base_url + "/", url)
+        same_host = urlparse(url).netloc == urlparse(self.base_url).netloc
+        getter = self.session.get if same_host else requests.get
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        with requests.get(url, stream=True, timeout=300) as r:
+        with getter(url, stream=True, timeout=300) as r:
             r.raise_for_status()
             with open(out_path, "wb") as f:
                 for chunk in r.iter_content(1 << 20):

@@ -32,5 +32,31 @@ VM_VIDEO_MODEL=grok-imagine-video-1.5      # 默认
 - 避免抽象形容词堆砌（"超级震撼、史诗级"），多写可以被看见的细节。
 - 有台词时写进 `dialogue`；1.5 模型会尝试生成对应声音。
 
+## 实测记录（2026-10-08，中转服务 194834.xyz）
+- `GET /models` 可用的相关模型：`grok-imagine-video-1.5`、`grok-imagine-image-2.0`、`grok-imagine-image-quality`。
+- `POST /videos/generations` 的请求字段：`model / prompt / duration / aspect_ratio / resolution / image.url(data URI)`，返回 `{"request_id": ...}`。
+- 轮询 `GET /videos/{id}`：先返回 `{"status":"pending","progress":1}`，完成后返回
+  `{"status":"done","video":{"url":"/v1/videos/{id}/content","duration":5},"usage":{"cost_in_usd_ticks":...}}`。
+  **视频地址是相对路径，下载时需要带鉴权头**（工具已处理）。
+- 5 秒 480p 的视频约 11 秒生成完成；`cost_in_usd_ticks` 为 4.1e9，约合 0.41 美元（按 1e10 tick = 1 美元换算）。
+- 1:1 画幅下 480p 实际输出 544×544、24fps，**自带音轨**，另有一条封面图视频流（抽帧时需取 `0:v:0`）。
+- 角色一致性：用设定图作为首帧时，5 秒内毛色、白爪和耳朵缺口都保持稳定。
+
+## 网络（云环境）
+需要放行：
+- `194834.xyz`：Grok 视频和 Grok 图像
+- `www.bb-api.com` 和 `img2.lsyzzzz.com`：gpt-image-2.5。中转服务经常只返回图床地址，不返回 base64，所以图床域名也要放行
+- `api.tripo3d.ai` 和 `tripo-data.rg1.data.tripo3d.com`：Tripo 的 API 和模型下载
+
+## 图像模型
+- 默认使用 gpt-image-2.5（`--image-provider openai`）。带参考图时走 `/images/edits`，实测中转服务会把它映射到 gpt-image-2。
+- 备用：`--image-provider grok`，使用 `grok-imagine-image-2.0`，稳定返回 base64，720×1280，单张约 0.04 美元。不支持参考图。
+
+## 端到端实测（2026-10-08）
+2 个镜头、3 段、21 秒、480p 竖屏：关键帧 → 图生视频 → 尾帧接力 → 拼接 → 字幕，全部跑通。
+- 尾帧接力的衔接处（同一镜头的两段之间）几乎看不出接缝。
+- 不同镜头的关键帧如果不带参考图，猫的特征（白胸口等）会不一致。**角色必须配设定图**。
+- 场景里写"便利店"时，模型会画出类似真实品牌的招牌。在 `avoid` 里加上"品牌标志、可读的招牌文字"。
+
 ## 经验记录
 （发现有效技巧请追加到这里，注明日期与案例）

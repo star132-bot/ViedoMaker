@@ -33,7 +33,7 @@ vm assemble projects/<名字>                  # 6. 拼接成片 + 字幕 + 音�
 | 用途 | 服务 | 命令 / 配置 |
 | --- | --- | --- |
 | 视频 | Grok Imagine Video 1.5（仅图生视频） | `vm render`，`XAI_API_KEY` + `GROK_MODELS_BASE_URL` |
-| 图像（关键帧、设定图） | OpenAI 兼容接口，Responses + image_generation | `vm image`，`OPENAI_API_KEY` + `OPENAI_BASE_URL` |
+| 图像（关键帧、设定图） | gpt-image-2.5（OpenAI 兼容 /images 接口）；备用 `--image-provider grok` | `vm image`，`OPENAI_API_KEY` + `OPENAI_BASE_URL` |
 | 3D（预演用模型） | Tripo3D | `vm model3d`，`TRIPO_API_KEY` |
 
 因为 Grok 1.5 只做图生视频，**每段都必须有首帧**：第一个镜头和新机位用 `keyframe`（由图像模型生成），或者用 `file`。

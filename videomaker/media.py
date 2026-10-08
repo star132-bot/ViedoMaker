@@ -49,9 +49,9 @@ def has_audio(path: Path) -> bool:
 def last_frame(video: Path, out: Path) -> Path:
     """抽取最后一帧，作为下一段的首帧（尾帧接力）。"""
     out.parent.mkdir(parents=True, exist_ok=True)
-    run_ffmpeg(["-sseof", "-0.5", "-i", str(video), "-update", "1", "-q:v", "1", str(out)])
+    run_ffmpeg(["-sseof", "-0.5", "-i", str(video), "-map", "0:v:0", "-update", "1", "-q:v", "1", str(out)])
     if not out.exists():  # 极短视频兜底
-        run_ffmpeg(["-i", str(video), "-vf", "reverse", "-frames:v", "1", str(out)])
+        run_ffmpeg(["-i", str(video), "-map", "0:v:0", "-vf", "reverse", "-frames:v", "1", str(out)])
     return out
 
 

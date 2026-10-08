@@ -117,16 +117,21 @@ def image(prompt: str, out: Path, aspect: str, refs: tuple[Path, ...], image_pro
 @main.command()
 @click.option("--prompt", help="文字生成 3D 模型")
 @click.option("--image", "image_path", type=click.Path(exists=True, path_type=Path), help="图片生成 3D 模型")
+@click.option("--task", "task_id", help="重新下载已完成任务的模型（不扣费）")
 @click.option("--out", required=True, type=click.Path(path_type=Path), help="输出 .glb 路径")
-def model3d(prompt: str | None, image_path: Path | None, out: Path) -> None:
+def model3d(prompt: str | None, image_path: Path | None, task_id: str | None, out: Path) -> None:
     """用 Tripo3D 生成 3D 模型（GLB），供 Blender 预演使用。"""
     from .model3d import TripoClient
 
-    if bool(prompt) == bool(image_path):
-        raise click.UsageError("--prompt 和 --image 二选一")
+    if sum(map(bool, (prompt, image_path, task_id))) != 1:
+        raise click.UsageError("--prompt、--image、--task 三选一")
     client = TripoClient()
-    path = (client.image_to_model(image_path, out, log=click.echo) if image_path
-            else client.text_to_model(prompt, out, log=click.echo))
+    if task_id:
+        path = client.fetch(task_id, out, log=click.echo)
+    elif image_path:
+        path = client.image_to_model(image_path, out, log=click.echo)
+    else:
+        path = client.text_to_model(prompt, out, log=click.echo)
     click.echo(f"[3D] {path}")
 
 

@@ -73,13 +73,19 @@ class TripoClient:
 
     def text_to_model(self, prompt: str, out: Path, log=print, **opts) -> Path:
         task = self.create_task({"type": "text_to_model", "prompt": prompt, **opts})
+        log(f"[3D] 任务 {task}（下载失败时可用 vm model3d --task {task} 重新下载，不再扣费）")
         return self._download_model(self.wait(task, log), out)
+
+    def fetch(self, task_id: str, out: Path, log=print) -> Path:
+        """下载已完成任务的模型（不重新生成）。"""
+        return self._download_model(self.wait(task_id, log), out)
 
     def image_to_model(self, image: Path, out: Path, log=print, **opts) -> Path:
         token = self.upload(image)
         ext = (image.suffix.lstrip(".") or "png").lower().replace("jpeg", "jpg")
         task = self.create_task({"type": "image_to_model",
                                  "file": {"type": ext, "file_token": token}, **opts})
+        log(f"[3D] 任务 {task}（下载失败时可用 vm model3d --task {task} 重新下载，不再扣费）")
         return self._download_model(self.wait(task, log), out)
 
     def _download_model(self, task: dict, out: Path) -> Path:
@@ -90,7 +96,13 @@ class TripoClient:
         if not url:
             raise RuntimeError(f"Tripo 任务没有返回模型地址: {task}")
         out.parent.mkdir(parents=True, exist_ok=True)
-        with requests.get(url, stream=True, timeout=300) as r:
+        try:
+            r = requests.get(url, stream=True, timeout=300)
+        except requests.RequestException as e:
+            host = url.split("/")[2]
+            raise RuntimeError(f"模型已生成，但无法从 {host} 下载（网络是否放行该域名？）。"
+                               f"任务 {task.get('task_id')}，放行后用 --task 重新下载。") from e
+        with r:
             r.raise_for_status()
             with open(out, "wb") as f:
                 for chunk in r.iter_content(1 << 20):

@@ -16,6 +16,8 @@
    vm model3d --prompt "深夜的街角便利店门面，低多边形" --out projects/<名字>/assets/3d/store.glb
    ```
    在 Blender 中用 File → Import → glTF 2.0 导入 `.glb`。
+   模型存放在 `tripo-data.*.tripo3d.com`，该域名需要在网络中放行。如果生成成功但下载失败，
+   用 `vm model3d --task <任务ID> --out ...` 重新下载，不会再次扣费。实测从图片生成一个模型消耗 30 点。
 1. 在 Blender 中用上面生成的模型、简单几何体或免费素材（Mixamo 人物、Poly Haven 场景）搭场景，为每个镜头建一个摄像机，命名为镜头 id（如 `s03`）。
 2. 渲染首帧：
    ```bash
