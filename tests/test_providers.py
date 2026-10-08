@@ -86,7 +86,7 @@ def test_openai_image_via_responses(keys, tmp_path):
     out = o.generate_image("猫", tmp_path / "k.png", "9:16", [ref])
     assert out.read_bytes() == PNG
     body = o.session.calls[0][2]["json"]
-    assert body["tools"][0] == {"type": "image_generation", "size": "1024x1536", "quality": "high"}
+    assert body["tools"][0] == {"type": "image_generation", "size": "864x1536", "quality": "high"}
     assert body["input"][0]["content"][1]["type"] == "input_image"
 
 

@@ -105,7 +105,7 @@ def run(project_dir: str, provider: str, image_provider: str | None) -> None:
 @main.command()
 @click.argument("prompt")
 @click.option("--out", required=True, type=click.Path(path_type=Path), help="输出图片路径")
-@click.option("--aspect", default="9:16", show_default=True)
+@click.option("--aspect", default="16:9", show_default=True)
 @click.option("--ref", "refs", multiple=True, type=click.Path(path_type=Path), help="参考图，可多次")
 @click.option("--image-provider", default="openai", show_default=True, type=click.Choice(IMAGE))
 def image(prompt: str, out: Path, aspect: str, refs: tuple[Path, ...], image_provider: str) -> None:

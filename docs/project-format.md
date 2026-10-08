@@ -8,7 +8,7 @@ title: 标题
 logline: 一句话故事
 
 output:
-  aspect_ratio: "9:16"       # 16:9 | 9:16 | 1:1 | 4:3 | 3:4
+  aspect_ratio: "16:9"       # 默认横屏；16:9 | 9:16 | 1:1 | 4:3 | 3:4
   resolution: 720p           # 480p | 720p
   fps: 24
 

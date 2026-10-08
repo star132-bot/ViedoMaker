@@ -18,7 +18,7 @@ Transition = Literal["cut", "fade"]
 
 
 class Output(BaseModel):
-    aspect_ratio: AspectRatio = "9:16"
+    aspect_ratio: AspectRatio = "16:9"  # 默认横屏
     resolution: Literal["480p", "720p"] = "720p"
     fps: int = 24
 

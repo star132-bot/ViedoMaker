@@ -63,7 +63,7 @@ def keyframe_prompt(project: Project, shot: Shot) -> str:
         ("光线", shot.lighting or style.lighting),
         ("氛围", shot.mood),
         ("风格", "，".join(x for x in (style.look, style.palette) if x)),
-        ("画幅", project.output.aspect_ratio),
+        ("画幅", f"{project.output.aspect_ratio}，画面铺满整个画幅，无黑边、无边框"),
         ("避免", "、".join(style.avoid)),
     ]
     return _join(lines)

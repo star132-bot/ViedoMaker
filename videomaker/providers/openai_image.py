@@ -21,8 +21,8 @@ from pathlib import Path
 import requests
 
 SIZES = {  # 画幅 → 生成尺寸
-    "16:9": "1536x1024", "4:3": "1536x1024",
-    "9:16": "1024x1536", "3:4": "1024x1536",
+    "16:9": "1536x864", "4:3": "1536x1024",   # 实测支持 1536x864（标准 16:9）
+    "9:16": "864x1536", "3:4": "1024x1536",
     "1:1": "1024x1024",
 }
 
@@ -101,7 +101,7 @@ class OpenAIImageProvider:
             r = _retry(lambda: self.session.post(
                 f"{self.base_url}/images/generations", timeout=600,
                 json={"model": self.image_model, "prompt": prompt, "size": size, "n": 1,
-                      "response_format": "b64_json"}))
+                      "quality": "high", "response_format": "b64_json"}))
         if r.status_code >= 400:
             raise RuntimeError(f"图像生成失败 {r.status_code}: {r.text[:500]}")
         item = r.json()["data"][0]

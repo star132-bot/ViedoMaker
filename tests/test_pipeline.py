@@ -65,3 +65,10 @@ def test_mock_render_and_assemble(tmp_path):
     assert abs(media.duration(final) - 32) < 1.0
     assert (p.output_dir / "rain-cat.srt").exists()
     assert (p.output_dir / "publish" / "douyin.json").exists()
+
+
+def test_lint_flags_letterbox_wording():
+    p = load_project(EXAMPLE)
+    p.style.look = "电影感，宽银幕构图"
+    assert any("黑条" in w for w in lint(p))
+    assert not any("黑条" in w for w in lint(load_project(EXAMPLE)))

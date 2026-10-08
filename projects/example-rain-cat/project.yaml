@@ -1,4 +1,4 @@
-# 示例项目：雨夜小猫（约 32 秒，竖屏）
+# 示例项目：雨夜小猫（约 32 秒，横屏）
 # 运行：vm check projects/example-rain-cat
 #       vm render projects/example-rain-cat --provider mock   # 本地模拟，不花钱
 #       vm assemble projects/example-rain-cat
@@ -8,7 +8,7 @@ title: 雨夜等候的橘猫
 logline: 一只橘猫在雨夜的便利店门口等待主人，主人终于撑伞出现。
 
 output:
-  aspect_ratio: "9:16"
+  aspect_ratio: "16:9"
   resolution: 720p
   fps: 24
 

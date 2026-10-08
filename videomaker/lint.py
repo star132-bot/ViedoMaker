@@ -10,6 +10,8 @@ from .prompt import reference_images, video_prompt
 from .schema import Project
 
 MAX_PROMPT_CHARS = 1800
+# 这些词会让图像模型把电影遮幅（上下黑条）直接画进首帧
+LETTERBOX_WORDS = ("宽银幕", "遮幅", "黑边", "2.35", "2.39", "letterbox", "cinemascope", "anamorphic")
 CHARS_PER_SECOND = 5  # 中文台词语速上限（字/秒）
 
 
@@ -52,6 +54,10 @@ def lint(project: Project, max_seconds: int = 15, requires_start_image: bool = F
         prev = shot
 
     for seg in plan_segments(project, max_seconds):
+        text = video_prompt(project, seg) + seg.shot.keyframe_prompt
+        hits = [x for x in LETTERBOX_WORDS if x.lower() in text.lower() and f"无{x}" not in text]
+        if hits:
+            w.append(f"段落 {seg.key} 提示词含 {hits}：模型会把上下黑条画进画面，改写成"电影感构图"即可")
         n = len(video_prompt(project, seg))
         if n > MAX_PROMPT_CHARS:
             w.append(f"段落 {seg.key} 提示词 {n} 字，过长会被忽略重点，建议精简")

@@ -59,8 +59,9 @@ def normalize(src: Path, out: Path, w: int, h: int, fps: int,
               keep_audio: bool = True, fade_in: float = 0, fade_out: float = 0) -> Path:
     """统一分辨率/帧率/编码，并保证有音轨（无声片段补静音），便于拼接。"""
     d = duration(src)
-    vf = [f"scale={w}:{h}:force_original_aspect_ratio=decrease",
-          f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2", f"fps={fps}", "setsar=1"]
+    # 放大铺满后居中裁切：模型输出比例略有偏差（如 Grok 16:9 实为 736x400）时不留黑边
+    vf = [f"scale={w}:{h}:force_original_aspect_ratio=increase",
+          f"crop={w}:{h}", f"fps={fps}", "setsar=1"]
     af = []
     if fade_in:
         vf.append(f"fade=t=in:st=0:d={fade_in}")

@@ -22,7 +22,7 @@
 2. 渲染首帧：
    ```bash
    blender -b scene.blend -P tools/blender/render_layout.py -- \
-       --camera s03 --out projects/<名字>/assets/previs/s03.png --aspect 9:16
+       --camera s03 --out projects/<名字>/assets/previs/s03.png --aspect 16:9
    ```
 3. 粗模渲染图风格与成片不同。可以选择：
    - **直接用作首帧**：在 `extra_prompt` 写"将画面渲染为<风格>，保持构图与人物位置"。
