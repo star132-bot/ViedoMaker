@@ -1,0 +1,8 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+.env
+# 生成产物不进仓库（体积大、可重新生成）
+projects/*/output/
+projects/*/assets/generated/

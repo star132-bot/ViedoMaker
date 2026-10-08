@@ -1,0 +1,82 @@
+# 示例项目：雨夜小猫（约 32 秒，竖屏）
+# 运行：vm check projects/example-rain-cat
+#       vm render projects/example-rain-cat --provider mock   # 本地模拟，不花钱
+#       vm assemble projects/example-rain-cat
+
+id: rain-cat
+title: 雨夜等候的橘猫
+logline: 一只橘猫在雨夜的便利店门口等待主人，主人终于撑伞出现。
+
+output:
+  aspect_ratio: "9:16"
+  resolution: 720p
+  fps: 24
+
+style:
+  look: 电影感写实，35mm 胶片质感，浅景深，轻微胶片颗粒
+  palette: 冷蓝夜色与便利店暖黄灯光的对比
+  lighting: 霓虹与路灯的柔和侧光，湿润地面有反光
+  camera: 稳定器拍摄，运镜缓慢
+  avoid: [文字水印, 字幕, 畸形肢体, 多余的尾巴, 画面闪烁, 卡通风格]
+
+characters:
+  - id: cat
+    name: 小橘
+    description: 一只体型圆润的成年橘色虎斑猫，琥珀色大眼睛，右耳尖有一个小缺口，白色胸口和四只白爪
+    reference_images: []   # 建议：先生成设定图放到 assets/cat_ref.png 再填这里
+  - id: owner
+    name: 女主人
+    description: 二十多岁的亚洲女性，齐肩黑色短发，素颜，神情疲惫但温柔
+    wardrobe: 米色风衣，撑一把透明雨伞
+
+locations:
+  - id: store
+    description: 深夜的街角便利店门口，玻璃门透出暖黄灯光，门前台阶被雨打湿，远处霓虹招牌模糊
+
+shots:
+  - id: s01
+    duration: 6
+    characters: [cat]
+    location: store
+    action: 小橘蹲坐在便利店门口的台阶上，雨滴不断落下，它抬头望向街道
+    camera: 远景缓慢推近到全景
+    mood: 孤独、期待
+    start_frame: keyframe
+    keyframe_prompt: 小橘蹲坐在湿漉漉的台阶中央，背后是暖黄的便利店玻璃门
+
+  - id: s02
+    duration: 20          # 超过 15 秒 → 自动拆成 2 段并尾帧接力
+    characters: [cat]
+    location: store
+    action: 小橘的特写，雨水打湿胡须，它耳朵微微转动，眼睛望向画面外
+    continuation_prompt: 小橘忽然站起来，尾巴竖起，向画面外走了一步
+    camera: 特写，缓慢环绕
+    mood: 安静，随后转为惊喜
+    start_frame: keyframe # 切到特写是新机位，要新关键帧；s02 内部第 2 段自动尾帧接力
+    transition: fade
+
+  - id: s03
+    duration: 6
+    characters: [cat, owner]
+    location: store
+    action: 女主人撑着透明雨伞走到台阶前蹲下，小橘蹭向她的手
+    camera: 中景，低机位平视
+    lighting: 便利店暖光照亮两人的脸
+    mood: 温暖、治愈
+    dialogue: 等很久了吧，我们回家。
+    start_frame: keyframe
+
+audio:
+  music: null          # 例：assets/bgm.mp3
+  music_volume: 0.25
+  keep_clip_audio: true
+  burn_subtitles: false
+
+publish:
+  - platform: douyin
+    title: 雨夜里，它一直在等你
+    tags: [AI视频, 治愈, 猫咪]
+  - platform: bilibili
+    title: 【AI短片】雨夜等候的橘猫
+    description: 使用 Grok Imagine 分镜接力生成
+    tags: [AI, 短片, 猫]
